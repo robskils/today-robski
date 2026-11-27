@@ -14326,6 +14326,13 @@ document.addEventListener('change', (e) => {
 });
 // ── §65 Space v4: the tabbed Space ───────────────────────────────────────────
 const AV4_TABS = [['overview', 'Latest'], ['vision', 'Vision & goals'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['tables', 'Tables'], ['mail', 'Mail'], ['calendar', 'Calendar']];
+// On mobile the tab row becomes a dropdown (see .av4-tabsel). Switching it changes
+// the Space section, exactly like tapping a tab. (Robin, 2026-11-27.)
+document.addEventListener('change', (e) => {
+  const s = e.target && e.target.closest && e.target.closest('[data-av4-tabsel]');
+  if (!s) return;
+  const st = state.areaV4 = state.areaV4 || {}; st.tab = s.value; st.q = ''; st.note = null; st.peek = null; renderArea();
+});
 function av4MonthEnd() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10); }
 function av4QuarterEnd() { const d = new Date(); const q = Math.floor(d.getMonth() / 3); return new Date(d.getFullYear(), q * 3 + 3, 0).toISOString().slice(0, 10); }
 function av4YearEnd() { return new Date(new Date().getFullYear(), 11, 31).toISOString().slice(0, 10); }
@@ -14539,7 +14546,7 @@ function renderAreaV4() {
       </div>
       ${strip}
       <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-av4-search type="search" placeholder="Search everything in ${esc(area.title || 'this Space')} – mail, notes, tasks, events" value="${esc(st.q || '')}"></div>
-      ${q ? '' : `<div class="av4-tabs">${tabsHtml}</div>`}
+      ${q ? '' : `<select class="av4-tabsel" data-av4-tabsel aria-label="Section">${AV4_TABS.map(([k, label]) => `<option value="${esc(k)}"${st.tab === k ? ' selected' : ''}>${esc(label)}${tabCount[k] ? ` (${tabCount[k]})` : ''}</option>`).join('')}</select><div class="av4-tabs">${tabsHtml}</div>`}
       <div class="av4-content">${content}</div>
     </div>`;
   renderNav();

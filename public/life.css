@@ -12594,7 +12594,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .av3-mm { display:block; width:100%; text-align:left; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-ink); padding:9px 18px; }
 .av3-mm:hover { background:var(--k-soft); }
 .av3-strip { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px 48px; margin-top:28px; padding:16px 0; border-top:1px solid var(--k-ink); border-bottom:1px solid var(--k-line); }
-@media (max-width:620px) { .av3-strip { grid-template-columns:1fr; } .av3-strip-people { justify-self:start !important; text-align:left !important; } }
+@media (max-width:620px) { .av3-strip { grid-template-columns:1fr; } .av3-strip-people { justify-self:start !important; text-align:left !important; justify-content:flex-start !important; margin-left:0 !important; } }
 .av3-strip-b { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; min-width:0; }
 .av3-strip-l { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--k-mute); white-space:nowrap; }
 .av3-strip-it { white-space:nowrap; }
@@ -12623,7 +12623,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .av3-empty { font-family:var(--k-sans); font-weight:400; font-size:15px; color:var(--k-mute); padding:6px 0; }
 .av3-empty-add { color:var(--k-goldt); cursor:pointer; margin-left:4px; }
 /* task cards */
-.av3-tcard { border:1px solid var(--k-line); padding:16px 18px; display:flex; flex-direction:column; gap:10px; min-height:118px; box-sizing:border-box; cursor:pointer; transition:border-color .2s ease; }
+.av3-tcard { min-width:0; border:1px solid var(--k-line); padding:16px 18px; display:flex; flex-direction:column; gap:10px; min-height:118px; box-sizing:border-box; cursor:pointer; transition:border-color .2s ease; }
 .av3-tcard:hover { border-color:var(--k-gold); }
 .av3-tc-top { display:flex; align-items:center; gap:10px; }
 .av3-tc-box { width:14px; height:14px; border:1px solid var(--k-gold); background:transparent; flex:none; cursor:pointer; }
@@ -12636,14 +12636,14 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .av3-tcard.done .av3-tc-title { text-decoration:line-through; color:var(--k-mute); }
 .av3-tc-from { margin-top:auto; font-family:var(--k-sans); font-weight:400; font-size:13.5px; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* note cards + reader */
-.av3-ncard { border:1px solid var(--k-line); padding:18px 18px 16px; display:flex; flex-direction:column; gap:8px; min-height:170px; box-sizing:border-box; cursor:pointer; transition:border-color .2s ease; }
+.av3-ncard { min-width:0; border:1px solid var(--k-line); padding:18px 18px 16px; display:flex; flex-direction:column; gap:8px; min-height:170px; box-sizing:border-box; cursor:pointer; transition:border-color .2s ease; }
 .av3-ncard:hover, .av3-ncard.sel { border-color:var(--k-gold); }
 /* "Latest" feed footer, when the Space holds more than the cap. (Robin, 2026-11-12.) */
 .av4-latest-more { margin-top:18px; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
 .av3-nc-top { display:flex; align-items:baseline; gap:10px; }
 .av3-nc-tag { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); }
 .av3-nc-when { margin-left:auto; font-family:var(--k-sans); font-weight:400; font-size:12.5px; color:var(--k-mute); }
-.av3-nc-title { font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1.35; text-wrap:pretty; }
+.av3-nc-title { font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1.35; text-wrap:pretty; overflow-wrap:anywhere; }
 .av3-nc-ex { font-family:var(--k-sans); font-weight:400; font-size:14px; line-height:1.5; color:var(--k-mute); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .av3-nreader { margin-top:14px; border:1px solid var(--k-gold); padding:24px clamp(20px,3vw,36px); animation:kfade .3s ease; }
 .av3-nr-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
@@ -12706,6 +12706,13 @@ body.night .av4-search, :root[data-theme='dark'] .av4-search { background:var(--
    top tracks the real header height (--navh), not a fixed 68px that mismatched
    the shorter mobile header. (Robin, 2026-11-11.) */
 .av4-tabs { position:sticky; top:var(--navh,68px); z-index:10; background:var(--k-bg); margin-top:0; border-bottom:1px solid var(--k-line); display:flex; flex-wrap:wrap; gap:0 clamp(20px,3vw,44px); align-items:flex-end; }
+/* On a phone the seven-tab row wraps into an untidy block, so it becomes a dropdown
+   (starts on "Latest", which shows the whole Space, newest first). (Robin, 2026-11-27.) */
+.av4-tabsel { display:none; }
+@media (max-width:620px) {
+  .av4-tabs { display:none; }
+  .av4-tabsel { display:block; width:100%; box-sizing:border-box; position:sticky; top:var(--navh,68px); z-index:10; margin:0; background:var(--k-bg); color:var(--k-ink); border:0; border-bottom:1px solid var(--k-line); padding:13px 4px; font-family:var(--k-serif); font-weight:500; font-size:21px; line-height:1.15; }
+}
 .av4-tab { display:flex; align-items:baseline; gap:8px; padding:18px 0 14px; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; white-space:nowrap; color:var(--k-mute); transition:color .2s ease; }
 .av4-tab:hover { color:var(--k-ink); }
 .av4-tab.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
@@ -12744,7 +12751,8 @@ body.night .av4-glance.white, :root[data-theme='dark'] .av4-glance.white { backg
 .av4-evrow:hover { background:var(--k-soft); }
 .av4-ev-day { font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-mute); white-space:nowrap; } .av4-ev-day.gold { color:var(--k-goldt); }
 .av4-ev-dot { width:7px; height:7px; background:var(--k-gold); align-self:center; justify-self:center; }
-.av4-ev-t { font-family:var(--k-sans); font-weight:500; font-size:17.5px; line-height:1.35; }
+.av4-ev-b { min-width:0; }
+.av4-ev-t { font-family:var(--k-sans); font-weight:500; font-size:17.5px; line-height:1.35; overflow-wrap:anywhere; }
 .av4-ev-sub { font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); margin-top:2px; }
 .av4-ev-time { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-mute); white-space:nowrap; }
 /* notes sort */
