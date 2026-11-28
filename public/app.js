@@ -29191,7 +29191,11 @@ function buildPalette() {
     ];
     const recents = recentSearches().map((s) => ({ kind: 'recent', title: s }));
     state.pal.items = [...acts, ...recents];
-    state.pal.sel = 0; renderPalItems(); return;
+    // No cell pre-selected: the action grid's hover and .sel share one look, so
+    // pre-selecting New note made its hover show nothing while the others lit up.
+    // -1 leaves all four responding to :hover alike; ArrowDown steps to 0, and
+    // Enter on nothing just closes. (Robin, 2026-11-28: New note hover didn't work.)
+    state.pal.sel = -1; renderPalItems(); return;
   }
   const ql = q.toLowerCase();
   // Typing searches your own stuff - notes, tables, tasks, Spaces, people -
