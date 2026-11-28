@@ -29186,6 +29186,7 @@ function buildPalette() {
     const acts = [
       { kind: 'action', title: 'New note', run: () => newNote(null) },
       { kind: 'action', title: 'New event', run: () => Promise.resolve(showQuickEvent()) },
+      { kind: 'action', title: 'New task', run: () => Promise.resolve(openMakeNew('task')) },
       { kind: 'action', title: 'New table', run: () => newTable() },
     ];
     const recents = recentSearches().map((s) => ({ kind: 'recent', title: s }));
@@ -29301,10 +29302,20 @@ function renderPalItems() {
   const firstRecent = items.findIndex((it) => it.kind === 'recent');
   const kindCls = (it) => (it.kind === 'action' ? '' : it.kind === 'recent' ? 'muted' : `kmark pal-k-${esc(it.kind)}`);
   const hint = (it) => (it.kind === 'action' ? '' : it.kind === 'recent' ? '<span class="pal-hint">search</span>' : '<span class="pal-hint">open</span>');
-  const list = items.length ? items.map((it, i) => `${i === firstRecent ? '<div class="pal-divider">Recent searches</div>' : ''}<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
-      <span class="pal-kind ${kindCls(it)}">${esc(palKindLabel(it))}</span>
-      <span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${hint(it)}</div>`).join('') : (state.pal.loading ? '<div class="pal-empty">Searching…</div>' : state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '');
-  el.innerHTML = list + palSmartFooter();
+  // Actions (New note/event/task/table) sit in a 2x2 grid up top; everything else -
+  // recent searches and live results - lists below. (Robin, 2026-11-28.)
+  const row = (it, i) => it.kind === 'action'
+    ? `<div class="pal-item pal-item-act ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}"><span class="pal-t">${esc(it.title)}</span></div>`
+    : `${i === firstRecent ? '<div class="pal-divider">Recent searches</div>' : ''}<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}"><span class="pal-kind ${kindCls(it)}">${esc(palKindLabel(it))}</span><span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${hint(it)}</div>`;
+  let html;
+  if (items.length) {
+    const actsHtml = items.map((it, i) => it.kind === 'action' ? row(it, i) : '').join('');
+    const restHtml = items.map((it, i) => it.kind === 'action' ? '' : row(it, i)).join('');
+    html = (actsHtml ? `<div class="pal-acts">${actsHtml}</div>` : '') + restHtml;
+  } else {
+    html = state.pal.loading ? '<div class="pal-empty">Searching…</div>' : state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '';
+  }
+  el.innerHTML = html + palSmartFooter();
 }
 function execItem(it) {
   if (!it) { closePalette(); return; }

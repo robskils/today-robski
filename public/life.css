@@ -7366,6 +7366,11 @@ textarea.fb-textarea { height:auto; min-height:120px; line-height:1.5; resize:ve
 /* max-width:none resets the global .sel rule (used for <select>s) that this
    item's "sel" class would otherwise inherit, shrinking + truncating it. */
 .pal-item.sel { background:var(--paper-2); max-width:none; }
+/* The quick-make actions as a 2x2 grid of tappable cells at the top of the palette. */
+.pal-acts { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:2px 0 8px; }
+.pal-item-act { justify-content:center; text-align:center; padding:17px 14px; border:1px solid var(--line); border-radius:0; }
+.pal-item-act:hover, .pal-item-act.sel { border-color:var(--accent); background:var(--paper-2); }
+.pal-item-act .pal-t { flex:none; font-weight:500; }
 .pal-kind { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--accent-ink); background:var(--accent); border-radius:0; padding:2px 7px; flex:none; }
 .pal-kind.muted { background:var(--line-2); color:var(--ink-2); }
 /* Each result kind gets its own colour chip, so the list scans at a glance.
